@@ -1,6 +1,6 @@
 {
 	"insert": {
-		"OPTIONS": "\t\tmouseWheelSpeed: 20,",
+		"OPTIONS": "\t\tmouseWheelSpeed: 20,\n\t\tscrollDuration: 0,\n\t\tpixelModeMouseWheelSpeed: 5,\n\t\tpixelModeScrollDuration: 4000,",
 		"NORMALIZATION": "\tthis.options.invertWheelDirection = this.options.invertWheelDirection ? -1 : 1;",
 		"_init": "\t\tif ( this.options.mouseWheel ) {\n\t\t\tthis._initWheel();\n\t\t}"
 	}

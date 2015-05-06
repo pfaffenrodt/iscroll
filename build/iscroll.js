@@ -1,4 +1,4 @@
-/*! iScroll v5.1.3 ~ (c) 2008-2014 Matteo Spinelli ~ http://cubiq.org/license */
+/*! iScroll v5.1.3 ~ (c) 2008-2015 Matteo Spinelli ~ http://cubiq.org/license */
 (function (window, document, Math) {
 var rAF = window.requestAnimationFrame	||
 	window.webkitRequestAnimationFrame	||
@@ -255,10 +255,13 @@ function IScroll (el, options) {
 		resizeScrollbars: true,
 
 		mouseWheelSpeed: 20,
+		scrollDuration: 0,
+		pixelModeMouseWheelSpeed: 5,
+		pixelModeScrollDuration: 4000,
 
 		snapThreshold: 0.334,
 
-// INSERT POINT: OPTIONS 
+// INSERT POINT: OPTIONS
 
 		startX: 0,
 		startY: 0,
@@ -315,7 +318,7 @@ function IScroll (el, options) {
 
 // INSERT POINT: NORMALIZATION
 
-	// Some defaults	
+	// Some defaults
 	this.x = 0;
 	this.y = 0;
 	this.directionX = 0;
@@ -405,6 +408,10 @@ IScroll.prototype = {
 		this._transitionTime();
 
 		this.startTime = utils.getTime();
+
+		if(undefined !== this.lastAnimation && null !== this.lastAnimation && this.lastAnimation.cancel===false){
+			this.lastAnimation.cancel=true;
+		}
 
 		if ( this.options.useTransition && this.isInTransition ) {
 			this.isInTransition = false;
@@ -758,7 +765,11 @@ IScroll.prototype = {
 			this._transitionTime(time);
 			this._translate(x, y);
 		} else {
-			this._animate(x, y, time, easing.fn);
+			if(undefined !== this.lastAnimation && null !== this.lastAnimation && this.lastAnimation.cancel===false){
+				this.lastAnimation.cancel=true;
+			}
+			this.lastAnimation=new this._animate(this,x, y, time, easing.fn);
+			this.lastAnimation.step();
 		}
 	},
 
@@ -1040,7 +1051,8 @@ IScroll.prototype = {
 
 		var wheelDeltaX, wheelDeltaY,
 			newX, newY,
-			that = this;
+			that = this,
+			scrollDuration;
 
 		if ( this.wheelTimeout === undefined ) {
 			that._execEvent('scrollStart');
@@ -1053,13 +1065,21 @@ IScroll.prototype = {
 			that.wheelTimeout = undefined;
 		}, 400);
 
+		scrollDuration = this.options.scrollDuration;
+
 		if ( 'deltaX' in e ) {
 			if (e.deltaMode === 1) {
 				wheelDeltaX = -e.deltaX * this.options.mouseWheelSpeed;
 				wheelDeltaY = -e.deltaY * this.options.mouseWheelSpeed;
 			} else {
-				wheelDeltaX = -e.deltaX;
-				wheelDeltaY = -e.deltaY;
+				if(this.options.useTransition){
+					wheelDeltaX = -e.deltaX;
+					wheelDeltaY = -e.deltaY;
+				}else{
+					wheelDeltaX = -e.deltaX * this.options.pixelModeMouseWheelSpeed;
+					wheelDeltaY = -e.deltaY * this.options.pixelModeMouseWheelSpeed;
+					scrollDuration = this.options.pixelModeScrollDuration;
+				}
 			}
 		} else if ( 'wheelDeltaX' in e ) {
 			wheelDeltaX = e.wheelDeltaX / 120 * this.options.mouseWheelSpeed;
@@ -1116,7 +1136,7 @@ IScroll.prototype = {
 			newY = this.maxScrollY;
 		}
 
-		this.scrollTo(newX, newY, 0);
+		this.scrollTo(newX, newY, scrollDuration);
 
 // INSERT POINT: _wheel
 	},
@@ -1491,21 +1511,28 @@ IScroll.prototype = {
 		this.keyTime = now;
 	},
 
-	_animate: function (destX, destY, duration, easingFn) {
-		var that = this,
-			startX = this.x,
-			startY = this.y,
-			startTime = utils.getTime(),
-			destTime = startTime + duration;
+	_animate: function (context,destX, destY, duration, easingFn) {
+		var that = context,
+			parent = this;
+		this.startX = context.x;
+		this.startY = context.y;
+		this.destX = destX;
+		this.destY = destY;
+		this.duration = duration;
+		this.startTime = utils.getTime();
+		this.destTime = this.startTime + this.duration;
 
-		function step () {
+		this.step = function() {
+			if(parent.cancel){
+				return;
+			}
 			var now = utils.getTime(),
-				newX, newY,
-				easing;
+			newX, newY,
+			easing;
 
-			if ( now >= destTime ) {
-				that.isAnimating = false;
-				that._translate(destX, destY);
+			if ( now >= parent.destTime ) {
+				this.isAnimating = false;
+				that._translate(parent.destX, parent.destY);
 
 				if ( !that.resetPosition(that.options.bounceTime) ) {
 					that._execEvent('scrollEnd');
@@ -1514,20 +1541,21 @@ IScroll.prototype = {
 				return;
 			}
 
-			now = ( now - startTime ) / duration;
+			now = ( now - parent.startTime ) / parent.duration;
 			easing = easingFn(now);
-			newX = ( destX - startX ) * easing + startX;
-			newY = ( destY - startY ) * easing + startY;
+			newX = ( parent.destX - parent.startX ) * easing + parent.startX;
+			newY = ( parent.destY - parent.startY ) * easing + parent.startY;
 			that._translate(newX, newY);
 
-			if ( that.isAnimating ) {
-				rAF(step);
+			if ( parent.isAnimating ) {
+				rAF(parent.step);
 			}
-		}
+		};
 
 		this.isAnimating = true;
-		step();
+		this.cancel= false;
 	},
+
 	handleEvent: function (e) {
 		switch ( e.type ) {
 			case 'touchstart':

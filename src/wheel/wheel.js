@@ -21,7 +21,8 @@
 
 		var wheelDeltaX, wheelDeltaY,
 			newX, newY,
-			that = this;
+			that = this,
+			scrollDuration;
 
 		if ( this.wheelTimeout === undefined ) {
 			that._execEvent('scrollStart');
@@ -34,13 +35,21 @@
 			that.wheelTimeout = undefined;
 		}, 400);
 
+		scrollDuration = this.options.scrollDuration;
+
 		if ( 'deltaX' in e ) {
 			if (e.deltaMode === 1) {
 				wheelDeltaX = -e.deltaX * this.options.mouseWheelSpeed;
 				wheelDeltaY = -e.deltaY * this.options.mouseWheelSpeed;
 			} else {
-				wheelDeltaX = -e.deltaX;
-				wheelDeltaY = -e.deltaY;
+				if(this.options.useTransition){
+					wheelDeltaX = -e.deltaX;
+					wheelDeltaY = -e.deltaY;
+				}else{
+					wheelDeltaX = -e.deltaX * this.options.pixelModeMouseWheelSpeed;
+					wheelDeltaY = -e.deltaY * this.options.pixelModeMouseWheelSpeed;
+					scrollDuration = this.options.pixelModeScrollDuration;
+				}
 			}
 		} else if ( 'wheelDeltaX' in e ) {
 			wheelDeltaX = e.wheelDeltaX / 120 * this.options.mouseWheelSpeed;
@@ -97,7 +106,7 @@
 			newY = this.maxScrollY;
 		}
 
-		this.scrollTo(newX, newY, 0);
+		this.scrollTo(newX, newY, scrollDuration);
 
 // INSERT POINT: _wheel
 	},

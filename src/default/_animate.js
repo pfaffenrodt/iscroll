@@ -1,19 +1,26 @@
 
-	_animate: function (destX, destY, duration, easingFn) {
-		var that = this,
-			startX = this.x,
-			startY = this.y,
-			startTime = utils.getTime(),
-			destTime = startTime + duration;
+	_animate: function (context,destX, destY, duration, easingFn) {
+		var that = context,
+			parent = this;
+		this.startX = context.x;
+		this.startY = context.y;
+		this.destX = destX;
+		this.destY = destY;
+		this.duration = duration;
+		this.startTime = utils.getTime();
+		this.destTime = this.startTime + this.duration;
 
-		function step () {
+		this.step = function() {
+			if(parent.cancel){
+				return;
+			}
 			var now = utils.getTime(),
-				newX, newY,
-				easing;
+			newX, newY,
+			easing;
 
-			if ( now >= destTime ) {
-				that.isAnimating = false;
-				that._translate(destX, destY);
+			if ( now >= parent.destTime ) {
+				this.isAnimating = false;
+				that._translate(parent.destX, parent.destY);
 
 				if ( !that.resetPosition(that.options.bounceTime) ) {
 					that._execEvent('scrollEnd');
@@ -22,17 +29,17 @@
 				return;
 			}
 
-			now = ( now - startTime ) / duration;
+			now = ( now - parent.startTime ) / parent.duration;
 			easing = easingFn(now);
-			newX = ( destX - startX ) * easing + startX;
-			newY = ( destY - startY ) * easing + startY;
+			newX = ( parent.destX - parent.startX ) * easing + parent.startX;
+			newY = ( parent.destY - parent.startY ) * easing + parent.startY;
 			that._translate(newX, newY);
 
-			if ( that.isAnimating ) {
-				rAF(step);
+			if ( parent.isAnimating ) {
+				rAF(parent.step);
 			}
-		}
+		};
 
 		this.isAnimating = true;
-		step();
+		this.cancel= false;
 	},

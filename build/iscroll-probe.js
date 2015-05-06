@@ -48,7 +48,7 @@ var utils = (function () {
 	};
 
 	me.prefixPointerEvent = function (pointerEvent) {
-		return window.MSPointerEvent ? 
+		return window.MSPointerEvent ?
 			'MSPointer' + pointerEvent.charAt(9).toUpperCase() + pointerEvent.substr(10):
 			pointerEvent;
 	};
@@ -255,10 +255,13 @@ function IScroll (el, options) {
 		resizeScrollbars: true,
 
 		mouseWheelSpeed: 20,
+		scrollDuration: 0,
+		pixelModeMouseWheelSpeed: 2,
+		pixelModeScrollDuration: 4000,
 
 		snapThreshold: 0.334,
 
-// INSERT POINT: OPTIONS 
+// INSERT POINT: OPTIONS
 
 		startX: 0,
 		startY: 0,
@@ -318,7 +321,7 @@ function IScroll (el, options) {
 
 // INSERT POINT: NORMALIZATION
 
-	// Some defaults	
+	// Some defaults
 	this.x = 0;
 	this.y = 0;
 	this.directionX = 0;
@@ -1049,7 +1052,8 @@ IScroll.prototype = {
 
 		var wheelDeltaX, wheelDeltaY,
 			newX, newY,
-			that = this;
+			that = this,
+			scrollDuration;
 
 		if ( this.wheelTimeout === undefined ) {
 			that._execEvent('scrollStart');
@@ -1062,13 +1066,16 @@ IScroll.prototype = {
 			that.wheelTimeout = undefined;
 		}, 400);
 
+		scrollDuration = this.options.scrollDuration;
+
 		if ( 'deltaX' in e ) {
 			if (e.deltaMode === 1) {
 				wheelDeltaX = -e.deltaX * this.options.mouseWheelSpeed;
 				wheelDeltaY = -e.deltaY * this.options.mouseWheelSpeed;
 			} else {
-				wheelDeltaX = -e.deltaX;
-				wheelDeltaY = -e.deltaY;
+				wheelDeltaX = -e.deltaX * this.options.pixelModeMouseWheelSpeed;
+				wheelDeltaY = -e.deltaY * this.options.pixelModeMouseWheelSpeed;
+				scrollDuration = this.options.pixelModeScrollDuration;
 			}
 		} else if ( 'wheelDeltaX' in e ) {
 			wheelDeltaX = e.wheelDeltaX / 120 * this.options.mouseWheelSpeed;
@@ -1125,7 +1132,7 @@ IScroll.prototype = {
 			newY = this.maxScrollY;
 		}
 
-		this.scrollTo(newX, newY, 0);
+		this.scrollTo(newX, newY, scrollDuration);
 
 		if ( this.options.probeType > 1 ) {
 			this._execEvent('scroll');
@@ -1519,7 +1526,7 @@ IScroll.prototype = {
 			if ( now >= destTime ) {
 				that.isAnimating = false;
 				that._translate(destX, destY);
-				
+
 				if ( !that.resetPosition(that.options.bounceTime) ) {
 					that._execEvent('scrollEnd');
 				}
@@ -1902,7 +1909,7 @@ Indicator.prototype = {
 				this.maxBoundaryX = this.maxPosX;
 			}
 
-			this.sizeRatioX = this.options.speedRatioX || (this.scroller.maxScrollX && (this.maxPosX / this.scroller.maxScrollX));	
+			this.sizeRatioX = this.options.speedRatioX || (this.scroller.maxScrollX && (this.maxPosX / this.scroller.maxScrollX));
 		}
 
 		if ( this.options.listenY ) {

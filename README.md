@@ -1,3 +1,12 @@
+<h1>Dirty Modified! To fit my needs (optimized horizontal scroll)</h1>
+added WinDesktop mousewheel smooth animation.
+Animation cancelable.
+All new started animation will cancel lastAnimation.
+
+
+Desktop smoothscroll will only working if useTransition is disabled
+useTransition = false
+
 <h1 id="intro">iScroll, smooth scrolling for the web</h1>
 
 iScroll is a high performance, small footprint, dependency free, multi-platform javascript scroller.
